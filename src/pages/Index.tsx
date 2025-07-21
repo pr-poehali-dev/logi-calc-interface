@@ -1,527 +1,485 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 
 interface RoutePoint {
   id: string;
-  location: string;
+  address: string;
+  isFirst: boolean;
+  isLast: boolean;
+}
+
+interface RouteCalculation {
+  distanceForward: number;
+  distanceReturn: number;
+  totalDistance: number;
+  days: number;
+  nights: number;
+  costs: {
+    fuel: number;
+    salary: number;
+    depreciation: number;
+    hotel: number;
+    tolls: number;
+    other: number;
+  };
+  total: number;
+  hasDetours: boolean;
 }
 
 export default function Index() {
-  const [fromLocation, setFromLocation] = useState('Москва');
-  const [toLocation, setToLocation] = useState('Екатеринбург');
-  const [routes, setRoutes] = useState<RoutePoint[]>([
-    { id: '1', location: 'Санкт-Петербург' },
-    { id: '2', location: 'Новгород' }
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([
+    { id: '1', address: '', isFirst: false, isLast: false }
   ]);
-  const [cargoWeight, setCargoWeight] = useState('5');
-  const [isFirstPoint, setIsFirstPoint] = useState(false);
-  const [isLastPoint, setIsLastPoint] = useState(false);
-  const [isOneWay, setIsOneWay] = useState(false);
+  const [shipmentDate, setShipmentDate] = useState('');
+  const [totalWeight, setTotalWeight] = useState('');
+  const [fromAddress, setFromAddress] = useState('');
+  const [toAddress, setToAddress] = useState('');
   const [services, setServices] = useState({
     loading: false,
     tenting: false,
-    extraPoint: false,
-    forwarding: false
+    expeditor: false,
+    additionalPoint: false
   });
-  const [showWarning, setShowWarning] = useState(false);
+  const [calculation, setCalculation] = useState<RouteCalculation | null>(null);
 
-  const addRoute = () => {
-    if (routes.length < 20) {
-      setRoutes([...routes, { id: Date.now().toString(), location: '' }]);
+  const addRoutePoint = () => {
+    if (routePoints.length < 20) {
+      setRoutePoints([...routePoints, { 
+        id: Date.now().toString(), 
+        address: '', 
+        isFirst: false, 
+        isLast: false 
+      }]);
     }
   };
 
-  const removeRoute = (id: string) => {
-    setRoutes(routes.filter(route => route.id !== id));
+  const removeRoutePoint = (id: string) => {
+    setRoutePoints(routePoints.filter(point => point.id !== id));
   };
 
-  const updateRoute = (id: string, field: string, value: string) => {
-    setRoutes(routes.map(route => 
-      route.id === id ? { ...route, [field]: value } : route
+  const updateRoutePoint = (id: string, field: keyof RoutePoint, value: any) => {
+    setRoutePoints(routePoints.map(point => 
+      point.id === id ? { ...point, [field]: value } : point
     ));
   };
 
-  const calculate = () => {
-    setShowWarning(true);
-  };
-
-  const getSelectedVehicle = (weight: string) => {
-    const w = parseFloat(weight);
-    if (w <= 3.5) return 'Газель (до 3.5т)';
-    if (w <= 10) return 'МАН 10т';
-    return 'Фура 20т';
+  const calculateRoute = () => {
+    // Mock calculation
+    const mockCalculation: RouteCalculation = {
+      distanceForward: 1250,
+      distanceReturn: 1250,
+      totalDistance: 2500,
+      days: 3,
+      nights: 2,
+      costs: {
+        fuel: 45000,
+        salary: 18000,
+        depreciation: 12500,
+        hotel: 4000,
+        tolls: 2500,
+        other: 3000
+      },
+      total: 85000,
+      hasDetours: routePoints.some(p => p.address.length > 0)
+    };
+    setCalculation(mockCalculation);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-screen bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">LOGICALC</h1>
-            <p className="text-gray-600 mt-1">Логистический калькулятор маршрутов и затрат</p>
+          <div className="flex items-center space-x-2">
+            <Icon name="Truck" className="text-teal-600" size={24} />
+            <h1 className="text-xl font-semibold text-gray-800 sf-pro-display">
+              LogiCalc
+            </h1>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
-              <Icon name="Menu" size={16} className="mr-2" />
-              Меню
-            </Button>
-            <Button variant="outline" size="sm">
-              <Icon name="User" size={16} />
-            </Button>
+          <div className="text-sm text-gray-500">
+            Калькулятор маршрутов и логистических затрат
           </div>
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6">
-        
-        {/* Route Input Block */}
-        <Card className="col-span-4 shadow-sm border-gray-200/50 animate-fade-in transition-all hover:shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg font-medium">
-              <Icon name="Route" size={20} className="mr-2 text-blue-600" />
-              Ввод маршрута
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* From/To Fields */}
-            <div className="space-y-3">
+      {/* Main Layout - 3 columns */}
+      <div className="flex h-full">
+        {/* Left Panel - Route Input */}
+        <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="from" className="text-sm font-medium text-gray-700">Откуда</Label>
-                <Input 
-                  id="from"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
-                  className="mt-1 transition-colors focus:ring-blue-500 focus:border-blue-500"
+                <Label htmlFor="shipment-date" className="text-sm font-medium text-gray-700">
+                  Дата отгрузки
+                </Label>
+                <Input
+                  id="shipment-date"
+                  type="date"
+                  value={shipmentDate}
+                  onChange={(e) => setShipmentDate(e.target.value)}
+                  className="mt-1 border-0 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
                 />
               </div>
+
               <div>
-                <Label htmlFor="to" className="text-sm font-medium text-gray-700">Куда</Label>
-                <Input 
-                  id="to"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                  className="mt-1 transition-colors focus:ring-blue-500 focus:border-blue-500"
+                <Label htmlFor="total-weight" className="text-sm font-medium text-gray-700">
+                  Общий вес (кг)
+                </Label>
+                <Input
+                  id="total-weight"
+                  type="number"
+                  placeholder="20000"
+                  value={totalWeight}
+                  onChange={(e) => setTotalWeight(e.target.value)}
+                  className="mt-1 border-0 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
                 />
               </div>
             </div>
 
-            <Separator />
+            {/* Route Points */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="from-address" className="text-sm font-medium text-gray-700">
+                  Откуда
+                </Label>
+                <Input
+                  id="from-address"
+                  placeholder="Москва"
+                  value={fromAddress}
+                  onChange={(e) => setFromAddress(e.target.value)}
+                  className="mt-1 border-0 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="to-address" className="text-sm font-medium text-gray-700">
+                  Куда
+                </Label>
+                <Input
+                  id="to-address"
+                  placeholder="Санкт-Петербург"
+                  value={toAddress}
+                  onChange={(e) => setToAddress(e.target.value)}
+                  className="mt-1 border-0 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
+                />
+              </div>
+            </div>
 
             {/* Intermediate Points */}
             <div>
-              <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                Промежуточные точки ({routes.length}/20)
-              </Label>
-              <div className="max-h-48 overflow-y-auto space-y-2">
-                {routes.map((route, index) => (
-                  <div key={route.id} className="flex items-center space-x-2 animate-fade-in">
-                    <div className="flex-1 relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 z-10">
-                        {index + 1}
-                      </span>
-                      <Input 
-                        placeholder="Промежуточная точка"
-                        value={route.location}
-                        onChange={(e) => updateRoute(route.id, 'location', e.target.value)}
-                        className="text-sm pl-8 transition-colors focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    {routes.length > 1 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeRoute(route.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Icon name="X" size={16} />
-                      </Button>
-                    )}
-                  </div>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-sm font-medium text-gray-700">
+                  Промежуточные точки
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={addRoutePoint}
+                  disabled={routePoints.length >= 20}
+                  className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                >
+                  <Icon name="Plus" size={16} className="mr-1" />
+                  Добавить
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {routePoints.map((point, index) => (
+                  <Card key={point.id} className="border-0 bg-gray-50 shadow-none">
+                    <CardContent className="p-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-medium text-gray-500 w-6">
+                            {index + 1}.
+                          </span>
+                          <Input
+                            placeholder="Город или адрес"
+                            value={point.address}
+                            onChange={(e) => updateRoutePoint(point.id, 'address', e.target.value)}
+                            className="border-0 bg-white text-sm"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeRoutePoint(point.id)}
+                            className="text-gray-400 hover:text-red-500 p-1 h-6 w-6"
+                          >
+                            <Icon name="X" size={12} />
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4 text-xs">
+                          <div className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`first-${point.id}`}
+                              checked={point.isFirst}
+                              onCheckedChange={(checked) => 
+                                updateRoutePoint(point.id, 'isFirst', checked)
+                              }
+                            />
+                            <Label htmlFor={`first-${point.id}`} className="text-gray-600">
+                              Первая
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`last-${point.id}`}
+                              checked={point.isLast}
+                              onCheckedChange={(checked) => 
+                                updateRoutePoint(point.id, 'isLast', checked)
+                              }
+                            />
+                            <Label htmlFor={`last-${point.id}`} className="text-gray-600">
+                              Последняя
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={addRoute}
-                className="w-full text-blue-600 border-blue-200 hover:bg-blue-50 transition-all duration-200 hover:shadow-sm animate-fade-in mt-3"
-                disabled={routes.length >= 20}
-              >
-                <Icon name="Plus" size={16} className="mr-1" />
-                Добавить точку
-              </Button>
             </div>
-
-            <Separator />
-
-            {/* Route Settings */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-gray-700">Настройки маршрута</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="firstPoint"
-                    checked={isFirstPoint}
-                    onCheckedChange={(checked) => {
-                      setIsFirstPoint(checked as boolean);
-                      if (checked) setIsLastPoint(false);
-                    }}
-                  />
-                  <Label htmlFor="firstPoint" className="text-sm text-gray-600">Первая точка</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="lastPoint"
-                    checked={isLastPoint}
-                    onCheckedChange={(checked) => {
-                      setIsLastPoint(checked as boolean);
-                      if (checked) setIsFirstPoint(false);
-                    }}
-                  />
-                  <Label htmlFor="lastPoint" className="text-sm text-gray-600">Последняя точка</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="oneWay"
-                    checked={isOneWay}
-                    onCheckedChange={(checked) => setIsOneWay(checked as boolean)}
-                  />
-                  <Label htmlFor="oneWay" className="text-sm text-gray-600">Только в одну сторону</Label>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Cargo Weight */}
-            <div>
-              <Label htmlFor="weight" className="text-sm font-medium text-gray-700">Вес груза (тонны)</Label>
-              <Input 
-                id="weight"
-                type="number"
-                value={cargoWeight}
-                onChange={(e) => setCargoWeight(e.target.value)}
-                className="mt-1 transition-colors focus:ring-blue-500 focus:border-blue-500"
-                min="0.1"
-                step="0.1"
-              />
-              <div className="mt-2">
-                <Badge variant="secondary" className="text-xs">
-                  Автоподбор: {getSelectedVehicle(cargoWeight)}
-                </Badge>
-              </div>
-            </div>
-
-            <Separator />
 
             {/* Additional Services */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-gray-700">Дополнительные услуги</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="loading"
-                    checked={services.loading}
-                    onCheckedChange={(checked) => setServices(prev => ({...prev, loading: checked as boolean}))}
-                  />
-                  <Label htmlFor="loading" className="text-xs text-gray-600">ПРР</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="tenting"
-                    checked={services.tenting}
-                    onCheckedChange={(checked) => setServices(prev => ({...prev, tenting: checked as boolean}))}
-                  />
-                  <Label htmlFor="tenting" className="text-xs text-gray-600">Растентовка</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="extraPoint"
-                    checked={services.extraPoint}
-                    onCheckedChange={(checked) => setServices(prev => ({...prev, extraPoint: checked as boolean}))}
-                  />
-                  <Label htmlFor="extraPoint" className="text-xs text-gray-600">Доп. точка</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="forwarding"
-                    checked={services.forwarding}
-                    onCheckedChange={(checked) => setServices(prev => ({...prev, forwarding: checked as boolean}))}
-                  />
-                  <Label htmlFor="forwarding" className="text-xs text-gray-600">Экспедирование</Label>
-                </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                Дополнительные услуги
+              </Label>
+              <div className="space-y-3">
+                {[
+                  { key: 'loading', label: 'ПРР (погрузочно-разгрузочные работы)' },
+                  { key: 'tenting', label: 'Растентовка' },
+                  { key: 'expeditor', label: 'Экспедитор' },
+                  { key: 'additionalPoint', label: 'Дополнительная точка' }
+                ].map(({ key, label }) => (
+                  <div key={key} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={key}
+                      checked={services[key as keyof typeof services]}
+                      onCheckedChange={(checked) => 
+                        setServices(prev => ({ ...prev, [key]: checked }))
+                      }
+                    />
+                    <Label htmlFor={key} className="text-sm text-gray-600">
+                      {label}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Calculate Button */}
-            <Button 
-              onClick={calculate}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-6 transition-all duration-200 hover:scale-105 shadow-lg"
+            <Button
+              onClick={calculateRoute}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl py-3 font-medium"
+              disabled={!fromAddress || !toAddress}
             >
-              <Icon name="Calculator" size={16} className="mr-2" />
-              Рассчитать
+              Рассчитать маршрут
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Map Block */}
-        <Card className="col-span-4 shadow-sm border-gray-200/50 animate-fade-in transition-all hover:shadow-md">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center text-lg font-medium">
-                <Icon name="Map" size={20} className="mr-2 text-green-600" />
-                Карта маршрута
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="hover:bg-gray-100 transition-colors">
-                <Icon name="Maximize2" size={16} />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Map Placeholder */}
-            <div className="aspect-square bg-gradient-to-br from-blue-50 to-green-50 rounded-lg border border-gray-200/50 flex items-center justify-center overflow-hidden">
-              <div className="text-center">
-                <Icon name="Map" size={48} className="mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-500 text-sm font-medium">GraphHopper карта</p>
-                <p className="text-gray-400 text-xs">localhost:8989</p>
-                <div className="mt-4 text-xs text-gray-400">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Москва</span>
-                  </div>
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>Санкт-Петербург</span>
-                  </div>
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span>Новгород</span>
-                  </div>
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>Екатеринбург</span>
+        {/* Center Panel - Map */}
+        <div className="flex-1 bg-gray-100 relative">
+          <div className="absolute inset-4">
+            <Card className="h-full border-0 shadow-sm overflow-hidden">
+              <CardContent className="p-0 h-full relative">
+                {/* Map placeholder */}
+                <div className="h-full flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50">
+                  <div className="text-center">
+                    <Icon name="Map" size={48} className="text-teal-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">
+                      Интерактивная карта маршрута
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      {calculation ? 'Маршрут построен' : 'Введите точки маршрута и нажмите "Рассчитать"'}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            {/* Route Summary */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 space-y-1">
-                <div className="flex justify-between">
-                  <span>Общий маршрут:</span>
-                  <span className="font-medium">1,247 км</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Время в пути:</span>
-                  <span className="font-medium">16ч 20мин</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Точек:</span>
-                  <span className="font-medium">4</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Cost Breakdown Block */}
-        <Card className="col-span-4 shadow-sm border-gray-200/50 animate-fade-in transition-all hover:shadow-md">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center text-lg font-medium">
-                <Icon name="Receipt" size={20} className="mr-2 text-purple-600" />
-                Детализация расходов
-              </CardTitle>
-              <div className="flex space-x-1">
-                <Button variant="outline" size="sm" className="text-xs hover:bg-gray-50 transition-colors">
-                  <Icon name="Download" size={14} className="mr-1" />
+                {/* Open in new window button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-3 right-3 bg-white/80 hover:bg-white shadow-sm"
+                >
+                  <Icon name="ExternalLink" size={16} />
+                </Button>
+
+                {/* Route summary overlay */}
+                {calculation && (
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="text-lg font-semibold text-gray-800">
+                              {calculation.totalDistance} км
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {calculation.days} дня, {calculation.nights} ночи
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-teal-600">
+                              {calculation.total.toLocaleString()} ₽
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Общая стоимость
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Right Panel - Route Details */}
+        <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
+          {calculation ? (
+            <div className="space-y-6">
+              {/* Distance Info */}
+              <Card className="border-0 bg-gray-50 shadow-none">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">Километраж</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Туда:</span>
+                      <span className="font-medium">{calculation.distanceForward} км</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Обратно:</span>
+                      <span className="font-medium">{calculation.distanceReturn} км</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-semibold">
+                      <span>Общий:</span>
+                      <span>{calculation.totalDistance} км</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Time Info */}
+              <Card className="border-0 bg-gray-50 shadow-none">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">Время в пути</h3>
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-teal-600">
+                        {calculation.days}
+                      </div>
+                      <div className="text-sm text-gray-600">дня</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {calculation.nights}
+                      </div>
+                      <div className="text-sm text-gray-600">ночи</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cost Breakdown */}
+              <Card className="border-0 bg-gray-50 shadow-none">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">Детализация расходов</h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Топливо', amount: calculation.costs.fuel, icon: 'Fuel' },
+                      { label: 'Зарплата водителя', amount: calculation.costs.salary, icon: 'User' },
+                      { label: 'Амортизация', amount: calculation.costs.depreciation, icon: 'TrendingDown' },
+                      { label: 'Гостиница', amount: calculation.costs.hotel, icon: 'Building' },
+                      { label: 'Платные дороги', amount: calculation.costs.tolls, icon: 'Car' },
+                      { label: 'Прочие расходы', amount: calculation.costs.other, icon: 'MoreHorizontal' }
+                    ].map(({ label, amount, icon }) => (
+                      <div key={label} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-2">
+                          <Icon name={icon} size={14} className="text-gray-400" />
+                          <span className="text-gray-600">{label}</span>
+                        </div>
+                        <span className="font-medium">{amount.toLocaleString()} ₽</span>
+                      </div>
+                    ))}
+                    
+                    <Separator />
+                    
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="font-semibold text-gray-800">Итого</span>
+                      <span className="text-xl font-bold text-teal-600">
+                        {calculation.total.toLocaleString()} ₽
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Export Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" size="sm" className="border-gray-200 hover:bg-gray-50">
+                  <Icon name="FileText" size={14} className="mr-2" />
                   PDF
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs hover:bg-gray-50 transition-colors">
-                  <Icon name="FileSpreadsheet" size={14} className="mr-1" />
+                <Button variant="outline" size="sm" className="border-gray-200 hover:bg-gray-50">
+                  <Icon name="FileSpreadsheet" size={14} className="mr-2" />
                   Excel
                 </Button>
               </div>
+
+              {/* Detour Warning */}
+              {calculation.hasDetours && (
+                <Card className="border border-orange-200 bg-orange-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <Icon name="AlertTriangle" size={16} className="text-orange-500 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-orange-800 mb-1">
+                          Маршрут удлиняется
+                        </h4>
+                        <p className="text-sm text-orange-700 mb-3">
+                          Промежуточные точки увеличивают километраж на 15%
+                        </p>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline" className="text-orange-700 border-orange-200 hover:bg-orange-100">
+                            Оптимизировать
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-orange-600 hover:bg-orange-100">
+                            Сравнить
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            {/* Route Details */}
-            <div className="space-y-3 mb-6">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-gray-600 mb-1">Общий км</div>
-                  <div className="text-lg font-semibold">1,247</div>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-gray-600 mb-1">В одну сторону</div>
-                  <div className="text-lg font-semibold">624</div>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-gray-600 mb-1">Дней в пути</div>
-                  <div className="text-lg font-semibold">2</div>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-gray-600 mb-1">Ночей</div>
-                  <div className="text-lg font-semibold">1</div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="text-sm text-gray-600">
-                <div className="mb-2 font-medium">Транспортное средство:</div>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {getSelectedVehicle(cargoWeight)}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Cost Breakdown */}
-            <div className="space-y-3">
-              <div className="text-sm font-medium text-gray-700">Расходы:</div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>ЗП водителя:</span>
-                  <span>12,000 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Бензин (гружёный):</span>
-                  <span>18,705 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Бензин (порожний):</span>
-                  <span>9,360 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>ТО и ремонт:</span>
-                  <span>3,741 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Амортизация:</span>
-                  <span>6,235 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Гостиницы:</span>
-                  <span>2,000 ₽</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Суточные:</span>
-                  <span>1,400 ₽</span>
-                </div>
-
-                {/* Additional Services */}
-                {(services.loading || services.tenting || services.extraPoint || services.forwarding) && (
-                  <>
-                    <Separator className="my-2" />
-                    <div className="text-xs text-gray-500 mb-1">Дополнительные услуги:</div>
-                    {services.loading && (
-                      <div className="flex justify-between text-gray-600">
-                        <span>ПРР:</span>
-                        <span>5,000 ₽</span>
-                      </div>
-                    )}
-                    {services.tenting && (
-                      <div className="flex justify-between text-gray-600">
-                        <span>Растентовка:</span>
-                        <span>2,500 ₽</span>
-                      </div>
-                    )}
-                    {services.extraPoint && (
-                      <div className="flex justify-between text-gray-600">
-                        <span>Доп. точка:</span>
-                        <span>3,000 ₽</span>
-                      </div>
-                    )}
-                    {services.forwarding && (
-                      <div className="flex justify-between text-gray-600">
-                        <span>Экспедирование:</span>
-                        <span>8,000 ₽</span>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                <Separator className="my-2" />
-                
-                <div className="flex justify-between font-semibold text-base pt-2 border-t">
-                  <span>ИТОГО:</span>
-                  <span className="text-green-600">
-                    {53441 + 
-                     (services.loading ? 5000 : 0) + 
-                     (services.tenting ? 2500 : 0) + 
-                     (services.extraPoint ? 3000 : 0) + 
-                     (services.forwarding ? 8000 : 0)
-                    } ₽
-                  </span>
-                </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Icon name="Calculator" size={48} className="text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-500 mb-2">
+                  Детализация маршрута
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Здесь появится подробная информация о расходах после расчета
+                </p>
               </div>
             </div>
-
-            {/* Timeline */}
-            <div className="mt-6">
-              <div className="text-sm font-medium text-gray-700 mb-3">График маршрута:</div>
-              <div className="space-y-2 text-xs text-gray-600">
-                <div className="flex justify-between">
-                  <span>Отгрузка (Москва):</span>
-                  <span>24.07 в 08:00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Прибытие (СПб):</span>
-                  <span>24.07 в 16:30</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Выгрузка (Новгород):</span>
-                  <span>25.07 в 11:20</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Прибытие (Екатеринбург):</span>
-                  <span>25.07 в 20:45</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Warning Block (appears after calculation) */}
-        {showWarning && (
-          <div className="col-span-12 mt-6 animate-fade-in">
-            <Alert className="border-orange-200 bg-orange-50">
-              <Icon name="AlertTriangle" size={16} className="text-orange-600" />
-              <AlertDescription>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-orange-800 font-medium mb-1">
-                      ⚠️ Точка "Сыктывкар" значительно увеличивает маршрут и выбивается из логики.
-                    </p>
-                    <p className="text-orange-700 text-sm">
-                      Рекомендуем рассчитать маршрут без неё. Возможно, стоит отправить отдельным ТС.
-                    </p>
-                  </div>
-                  <div className="flex space-x-2 ml-4">
-                    <Button variant="outline" size="sm" className="text-orange-700 border-orange-300 hover:bg-orange-100 transition-colors">
-                      Рассчитать без неё
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-orange-700 border-orange-300 hover:bg-orange-100 transition-colors">
-                      Показать сравнение
-                    </Button>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
