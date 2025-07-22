@@ -42,6 +42,7 @@ export default {
 						900: '#1C1C1E',
 					}
 				},
+				'gray-25': 'hsl(var(--gray-25))',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

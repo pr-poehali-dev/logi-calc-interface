@@ -6,6 +6,7 @@
   :root {
     /* Minimal Bear/Notion inspired theme */
     --background: 0 0% 99%;
+    --gray-25: 0 0% 98%;
     --foreground: 215 16% 35%; /* Darker for better readability */
 
     --card: 0 0% 100%;
