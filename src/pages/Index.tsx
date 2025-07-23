@@ -308,9 +308,7 @@ export default function Index() {
                   htmlFor="one-way" 
                   className="text-sm text-gray-600 cursor-pointer"
                   title="По умолчанию считается кольцевой маршрут"
-                >
-                  В одну сторону с мультитуром
-                </Label>
+                >В одну сторону</Label>
               </div>
             </div>
 
