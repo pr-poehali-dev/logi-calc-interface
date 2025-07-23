@@ -43,7 +43,9 @@ interface RouteCalculation {
 export default function Index() {
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [fromAddress, setFromAddress] = useState('');
-  const [toAddress, setToAddress] = useState('Пермь');
+  const [toAddress, setToAddress] = useState('');
+  const [toFirst, setToFirst] = useState(false);
+  const [toLast, setToLast] = useState(false);
   const [cargoWeight, setCargoWeight] = useState('1');
   const [departureDate, setDepartureDate] = useState('22.07.2025');
   const [isOneWay, setIsOneWay] = useState(false);
@@ -178,21 +180,60 @@ export default function Index() {
               />
             </div>
 
-            {/* Route */}
+            {/* Route From */}
             <div>
               <Label className="text-sm font-medium text-gray-700 mb-3 block">
                 Откуда:
               </Label>
-              <Select value={toAddress} onValueChange={setToAddress}>
-                <SelectTrigger className="border-gray-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Пермь">Пермь</SelectItem>
-                  <SelectItem value="Москва">Москва</SelectItem>
-                  <SelectItem value="Санкт-Петербург">Санкт-Петербург</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                value={fromAddress}
+                onChange={(e) => setFromAddress(e.target.value)}
+                placeholder="Введите адрес отправления"
+                className="border-gray-200"
+              />
+            </div>
+
+            {/* Route To */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                Куда:
+              </Label>
+              <div className="space-y-3">
+                <Input
+                  value={toAddress}
+                  onChange={(e) => setToAddress(e.target.value)}
+                  placeholder="Введите адрес назначения"
+                  className="border-gray-200"
+                />
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <Checkbox
+                      id="to-first"
+                      checked={toFirst}
+                      onCheckedChange={(checked) => {
+                        setToFirst(checked as boolean);
+                        if (checked) setToLast(false);
+                      }}
+                    />
+                    <Label htmlFor="to-first" className="text-sm text-gray-600">
+                      Первая
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Checkbox
+                      id="to-last"
+                      checked={toLast}
+                      onCheckedChange={(checked) => {
+                        setToLast(checked as boolean);
+                        if (checked) setToFirst(false);
+                      }}
+                    />
+                    <Label htmlFor="to-last" className="text-sm text-gray-600">
+                      Последняя
+                    </Label>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Route Points */}
@@ -255,9 +296,54 @@ export default function Index() {
               </Button>
             </div>
 
+            {/* One Way Option */}
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <Checkbox
+                  id="one-way"
+                  checked={isOneWay}
+                  onCheckedChange={(checked) => setIsOneWay(checked as boolean)}
+                />
+                <Label 
+                  htmlFor="one-way" 
+                  className="text-sm text-gray-600 cursor-pointer"
+                  title="По умолчанию считается кольцевой маршрут"
+                >
+                  В одну сторону с мультитуром
+                </Label>
+              </div>
+            </div>
+
             {/* Additional Services */}
             <div>
-              <div className="flex items-center space-x-4 mb-2">
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                Дополнительные услуги:
+              </Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-1">
+                  <Checkbox
+                    id="loading"
+                    checked={services.loading}
+                    onCheckedChange={(checked) => 
+                      setServices(prev => ({ ...prev, loading: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="loading" className="text-sm text-gray-600">
+                    ПРР
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Checkbox
+                    id="tenting"
+                    checked={services.tenting}
+                    onCheckedChange={(checked) => 
+                      setServices(prev => ({ ...prev, tenting: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="tenting" className="text-sm text-gray-600">
+                    Растентовка
+                  </Label>
+                </div>
                 <div className="flex items-center space-x-1">
                   <Checkbox
                     id="expediting"
@@ -267,7 +353,19 @@ export default function Index() {
                     }
                   />
                   <Label htmlFor="expediting" className="text-sm text-gray-600">
-                    Экспедитор
+                    Экспедиторские услуги
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Checkbox
+                    id="additional-point"
+                    checked={services.additionalPoint}
+                    onCheckedChange={(checked) => 
+                      setServices(prev => ({ ...prev, additionalPoint: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="additional-point" className="text-sm text-gray-600">
+                    Доп точка
                   </Label>
                 </div>
               </div>
@@ -277,7 +375,7 @@ export default function Index() {
             <Button
               onClick={calculateRoute}
               className="w-full bg-green-500 hover:bg-green-600 text-white py-3 font-medium"
-              disabled={!toAddress}
+              disabled={!fromAddress || !toAddress}
             >
               Рассчитать маршрут
             </Button>
