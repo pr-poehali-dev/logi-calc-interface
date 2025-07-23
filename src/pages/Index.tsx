@@ -343,9 +343,7 @@ export default function Index() {
                 <Label 
                   htmlFor="one-way" 
                   className="text-sm text-gray-600 cursor-pointer"
-                >
-                  В одну сторону с мультитуром
-                </Label>
+                >В одну сторону</Label>
                 <Icon name="Info" size={14} className="text-gray-400" />
                 <div className="absolute left-0 top-6 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
                   По умолчанию рассчитывается кольцевой маршрут
