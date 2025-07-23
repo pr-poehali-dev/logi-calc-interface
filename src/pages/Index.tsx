@@ -238,59 +238,72 @@ export default function Index() {
 
             {/* Route Points */}
             <div>
-              {routePoints.map((point, index) => (
-                <div key={point.id} className="mb-3">
-                  <Input
-                    placeholder="Промежуточная точка"
-                    value={point.address}
-                    onChange={(e) => updateRoutePoint(point.id, 'address', e.target.value)}
-                    className="border-gray-200 mb-2"
-                  />
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1">
-                      <Checkbox
-                        id={`first-${point.id}`}
-                        checked={point.isFirst}
-                        onCheckedChange={(checked) => {
-                          updateRoutePoint(point.id, 'isFirst', checked);
-                          if (checked) {
-                            setRoutePoints(prev => prev.map(p => 
-                              p.id !== point.id ? { ...p, isLast: false } : p
-                            ));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`first-${point.id}`} className="text-sm text-gray-600">
-                        Первая
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Checkbox
-                        id={`last-${point.id}`}
-                        checked={point.isLast}
-                        onCheckedChange={(checked) => {
-                          updateRoutePoint(point.id, 'isLast', checked);
-                          if (checked) {
-                            setRoutePoints(prev => prev.map(p => 
-                              p.id !== point.id ? { ...p, isFirst: false } : p
-                            ));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`last-${point.id}`} className="text-sm text-gray-600">
-                        Последняя
-                      </Label>
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                Промежуточные остановки:
+              </Label>
+              <div className="max-h-48 overflow-y-auto space-y-3 mb-3 pr-2">
+                {routePoints.map((point, index) => (
+                  <div key={point.id} className="space-y-2">
+                    <Input
+                      placeholder="Промежуточная точка"
+                      value={point.address}
+                      onChange={(e) => updateRoutePoint(point.id, 'address', e.target.value)}
+                      className="border-gray-200"
+                    />
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Checkbox
+                          id={`first-${point.id}`}
+                          checked={point.isFirst}
+                          onCheckedChange={(checked) => {
+                            updateRoutePoint(point.id, 'isFirst', checked);
+                            if (checked) {
+                              setRoutePoints(prev => prev.map(p => 
+                                p.id !== point.id ? { ...p, isLast: false } : p
+                              ));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`first-${point.id}`} className="text-sm text-gray-600">
+                          Первая
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Checkbox
+                          id={`last-${point.id}`}
+                          checked={point.isLast}
+                          onCheckedChange={(checked) => {
+                            updateRoutePoint(point.id, 'isLast', checked);
+                            if (checked) {
+                              setRoutePoints(prev => prev.map(p => 
+                                p.id !== point.id ? { ...p, isFirst: false } : p
+                              ));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`last-${point.id}`} className="text-sm text-gray-600">
+                          Последняя
+                        </Label>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRoutePoint(point.id)}
+                        className="ml-auto text-gray-400 hover:text-red-500 p-1 h-auto"
+                      >
+                        <Icon name="X" size={14} />
+                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={addRoutePoint}
                 disabled={routePoints.length >= 20}
-                className="text-gray-600 p-0 h-auto"
+                className="text-blue-600 hover:text-blue-700 p-0 h-auto"
               >
                 + Добавить точку
               </Button>
