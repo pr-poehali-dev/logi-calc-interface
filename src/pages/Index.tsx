@@ -9,6 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Icon from '@/components/ui/icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface RoutePoint {
   id: string;
@@ -47,7 +52,8 @@ export default function Index() {
   const [toFirst, setToFirst] = useState(false);
   const [toLast, setToLast] = useState(false);
   const [cargoWeight, setCargoWeight] = useState('1');
-  const [departureDate, setDepartureDate] = useState('22.07.2025');
+  const [departureDate, setDepartureDate] = useState<Date>(new Date());
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isOneWay, setIsOneWay] = useState(false);
   const [services, setServices] = useState({
     loading: false,
@@ -146,23 +152,40 @@ export default function Index() {
       {/* Main Content */}
       <div className="flex h-full">
         {/* Left Panel - Route Input */}
-        <div className="w-96 bg-white p-8 overflow-y-auto">
-          <div className="space-y-8">
+        <div className="w-96 bg-white flex flex-col">
+          <div className="flex-1 overflow-y-auto p-8 pb-4">
+            <div className="space-y-8">
             {/* Date */}
             <div>
               <Label className="text-sm font-medium text-gray-700 mb-3 block">
                 Дата отгрузки
               </Label>
-              <Select value={departureDate} onValueChange={setDepartureDate}>
-                <SelectTrigger className="border-gray-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="22.07.2025">22.07.2025</SelectItem>
-                  <SelectItem value="23.07.2025">23.07.2025</SelectItem>
-                  <SelectItem value="24.07.2025">24.07.2025</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal border-gray-200"
+                  >
+                    <Icon name="Calendar" className="mr-2 h-4 w-4" />
+                    {format(departureDate, 'dd.MM.yyyy', { locale: ru })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <DayPicker
+                    mode="single"
+                    selected={departureDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDepartureDate(date);
+                        setIsCalendarOpen(false);
+                      }
+                    }}
+                    locale={ru}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Cargo Weight */}
@@ -311,7 +334,7 @@ export default function Index() {
 
             {/* One Way Option */}
             <div>
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center space-x-2 mb-4 relative group">
                 <Checkbox
                   id="one-way"
                   checked={isOneWay}
@@ -320,8 +343,13 @@ export default function Index() {
                 <Label 
                   htmlFor="one-way" 
                   className="text-sm text-gray-600 cursor-pointer"
-                  title="По умолчанию считается кольцевой маршрут"
-                >В одну сторону</Label>
+                >
+                  В одну сторону с мультитуром
+                </Label>
+                <Icon name="Info" size={14} className="text-gray-400" />
+                <div className="absolute left-0 top-6 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
+                  По умолчанию рассчитывается кольцевой маршрут
+                </div>
               </div>
             </div>
 
@@ -330,7 +358,7 @@ export default function Index() {
               <Label className="text-sm font-medium text-gray-700 mb-3 block">
                 Дополнительные услуги:
               </Label>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center space-x-1">
                   <Checkbox
                     id="loading"
@@ -364,7 +392,7 @@ export default function Index() {
                     }
                   />
                   <Label htmlFor="expediting" className="text-sm text-gray-600">
-                    Экспедиторские услуги
+                    Экспедиторские
                   </Label>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -382,7 +410,11 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Calculate Button */}
+            </div>
+          </div>
+          
+          {/* Fixed Calculate Button */}
+          <div className="p-8 pt-4 border-t border-gray-100 bg-white">
             <Button
               onClick={calculateRoute}
               className="w-full bg-green-500 hover:bg-green-600 text-white py-3 font-medium"
